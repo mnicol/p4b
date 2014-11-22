@@ -110,6 +110,12 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 
+    // Added for p4b
+    int             clone(void*);
+    int             lock(int*);
+    int             unlock(int *);
+    int             join();
+
 // swtch.S
 void            swtch(struct context**, struct context*);
 

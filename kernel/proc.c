@@ -159,6 +159,9 @@ fork(void)
   return pid;
 }
 
+
+//Added for p4b
+
 //CLONE function for creating new threads
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
@@ -170,16 +173,24 @@ clone(void *stack)
   struct proc *np;
 
   // Allocate process.
-  if((np = allocproc()) == 0)
+  if((np = allocproc()) == 0) //find slot in ptable thats unsed
     return -1;
 
+
+// want same address space but different stacks
+  //something like np->pdir = oldp->pdir
   // Copy process state from p.
-  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
-    kfree(np->kstack);
-    np->kstack = 0;
-    np->state = UNUSED;
-    return -1;
-  }
+
+  // if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
+  //   kfree(np->kstack);
+  //   np->kstack = 0;
+  //   np->state = UNUSED;
+  //   return -1;
+  // }
+
+  np->pgdir = proc->pgdir; // Assign new proc the same page dir as parent proc ie: same page directory
+
+
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
@@ -192,11 +203,27 @@ clone(void *stack)
       np->ofile[i] = filedup(proc->ofile[i]);
   np->cwd = idup(proc->cwd);
  
-  pid = np->pid;
+  pid = np->pid;//might not want this
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
 }
+
+int join()
+{
+  return -1;
+}
+
+int lock(int *l)
+{
+  return -1;
+}
+
+int unlock(int *l)
+{
+  return -1;
+}
+
 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state

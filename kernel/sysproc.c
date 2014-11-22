@@ -12,11 +12,52 @@ sys_fork(void)
   return fork();
 }
 
-int
-sys_clone(void)
+//// Added for p4b ////
+
+//int clone(void *stack)
+int sys_clone(void)
 {
-  return fork();
+
+// Fetch the nth word-sized system call argument as a pointer
+// to a block of memory of size n bytes.  Check that the pointer
+// lies within the process address space.
+//int argptr(int n, char **pp, int size)
+
+  void *stack;
+
+  if(argptr(0, (void*)&stack, 2*sizeof(stack[0])) < 0){ return -1; }
+
+  return clone(stack);
 }
+
+//int join()
+int sys_join(void)
+{
+  return join();
+}
+
+//int lock(int *l)
+int sys_lock(void)
+{
+  int *l;
+
+  if(argptr(0, (void*)&l, 2*sizeof(l[0])) < 0){ return -1; }
+
+  return lock(l);
+}
+
+//int unlock(int *l)
+int sys_unlock(void)
+{
+  int *l;
+
+  if(argptr(0, (void*)&l, 2*sizeof(l[0])) < 0){ return -1; }
+
+  return unlock(l);
+}
+
+///////////////////////
+
 
 int
 sys_exit(void)
