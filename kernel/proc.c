@@ -105,6 +105,7 @@ userinit(void)
   //Added for p4b
   p->isThread = false;
   p->threadCount = 0;
+  p->threadID = p->pid;
 
   p->state = RUNNABLE;
   release(&ptable.lock);
@@ -167,6 +168,9 @@ fork(void)
   np->threadCount = 0;
  
   pid = np->pid;
+
+  np->threadID = pid;
+
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
@@ -222,6 +226,7 @@ clone(void *stack)
 
   np->isThread = true;
   np->parent->threadCount += 1;
+  np->threadID = proc->threadID;
 
 
   return pid;
@@ -280,14 +285,49 @@ int join()
   }
 }
 
-int lock(int *l)
+int lock(int *lock)
 {
-  return -1;
+
+  pushcli(); // disable interrupts to avoid deadlock.
+
+  volatile uint *lk = (uint*)lock;
+
+  if(*lk)
+  {
+    struct spinlock spinlk;
+    initlock(&spinlk, NULL);
+    spinlk.locked = *lk;
+    sleep((void*)proc->threadID, &spinlk);
+    //panic("acquire");
+  }
+
+  // The xchg is atomic.
+  // It also serializes, so that reads after acquire are not
+  // reordered before it. 
+  while(xchg(lk, 1) != 0)
+    ;
+
+  return 1;
 }
 
-int unlock(int *l)
+int unlock(int *lock)
 {
-  return -1;
+
+  volatile uint *lk = (uint*)lock;
+
+  if(!(*lk))
+  {
+    return -1;
+    panic("release");
+  }
+
+  xchg(lk, 0);
+
+  wakeup((void *)proc->threadID);
+
+  popcli();
+
+  return 1;
 }
 
 

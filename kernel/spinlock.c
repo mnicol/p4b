@@ -25,7 +25,10 @@ acquire(struct spinlock *lk)
 {
   pushcli(); // disable interrupts to avoid deadlock.
   if(holding(lk))
+  {
+    //sleep((void*)proc->threadID, lk);
     panic("acquire");
+  }
 
   // The xchg is atomic.
   // It also serializes, so that reads after acquire are not
@@ -58,6 +61,8 @@ release(struct spinlock *lk)
   // The xchg being asm volatile ensures gcc emits it after
   // the above assignments (and after the critical section).
   xchg(&lk->locked, 0);
+
+  //wakeup((void *)proc->threadID);
 
   popcli();
 }
