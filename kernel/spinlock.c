@@ -67,6 +67,13 @@ release(struct spinlock *lk)
   popcli();
 }
 
+
+
+//Added for p4b
+
+
+
+
 // Record the current call stack in pcs[] by following the %ebp chain.
 void
 getcallerpcs(void *v, uint pcs[])

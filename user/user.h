@@ -46,5 +46,8 @@ void* malloc(uint);
 void free(void*);
 int atoi(const char*);
 
+// Added fpr p4b
+int thread_create(void (*fn) (void *), void *arg);
+
 #endif // _USER_H_
 

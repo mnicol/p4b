@@ -11,6 +11,14 @@ typedef int bool;
 #define true  1
 #define false 0
 
+struct 
+{
+  struct spinlock lock;
+  void *chan;
+
+} spinlockWrapper;
+
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -28,6 +36,10 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+
+  spinlockWrapper.chan = (void*) 1;
+
+  initlock(&spinlockWrapper.lock, "threadLock");
 }
 
 // Look in the process table for an UNUSED proc.
@@ -285,48 +297,25 @@ int join()
   }
 }
 
+
+
 int lock(int *lock)
 {
+  if(*lock == 1)
+    {
+      sleep(spinlockWrapper.chan, &spinlockWrapper.lock);
+    }
 
-  pushcli(); // disable interrupts to avoid deadlock.
-
-  volatile uint *lk = (uint*)lock;
-
-  if(*lk)
-  {
-    struct spinlock spinlk;
-    initlock(&spinlk, NULL);
-    spinlk.locked = *lk;
-    sleep((void*)proc->threadID, &spinlk);
-    //panic("acquire");
-  }
-
-  // The xchg is atomic.
-  // It also serializes, so that reads after acquire are not
-  // reordered before it. 
-  while(xchg(lk, 1) != 0)
-    ;
-
+  spinlockWrapper.lock.locked = *lock;
+  acquire(&(spinlockWrapper.lock));
   return 1;
 }
 
 int unlock(int *lock)
 {
-
-  volatile uint *lk = (uint*)lock;
-
-  if(!(*lk))
-  {
-    return -1;
-    panic("release");
-  }
-
-  xchg(lk, 0);
-
-  wakeup((void *)proc->threadID);
-
-  popcli();
-
+  spinlockWrapper.lock.locked = *lock;
+  release(&(spinlockWrapper.lock));
+  wakeup(spinlockWrapper.chan);
   return 1;
 }
 
