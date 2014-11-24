@@ -6,6 +6,10 @@
 #include "proc.h"
 #include "spinlock.h"
 
+//Added for p4b
+typedef int bool;
+#define true  1
+#define false 0
 
 struct {
   struct spinlock lock;
@@ -98,6 +102,10 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  //Added for p4b
+  p->isThread = false;
+  p->threadCount = 0;
+
   p->state = RUNNABLE;
   release(&ptable.lock);
 }
@@ -153,6 +161,10 @@ fork(void)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
   np->cwd = idup(proc->cwd);
+
+  //Added for p4b
+  np->isThread = false;
+  np->threadCount = 0;
  
   pid = np->pid;
   np->state = RUNNABLE;
@@ -176,18 +188,6 @@ clone(void *stack)
   // Allocate process.
   if((np = allocproc()) == 0) //find slot in ptable thats unsed
     return -1;
-
-
-// want same address space but different stacks
-  //something like np->pdir = oldp->pdir
-  // Copy process state from p.
-
-  // if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
-  //   kfree(np->kstack);
-  //   np->kstack = 0;
-  //   np->state = UNUSED;
-  //   return -1;
-  // }
 
   np->pgdir = proc->pgdir; // Assign new proc the same page dir as parent proc ie: same page directory
 
@@ -218,6 +218,12 @@ clone(void *stack)
   pid = np->pid;//might not want this
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
+
+
+  np->isThread = true;
+  np->parent->threadCount += 1;
+
+
   return pid;
 }
 
@@ -230,15 +236,20 @@ int join()
   for(;;){
     // Scan through table looking for zombie children.
     havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+
+      // Checks to see if the process is a child of the current proc
+      if(p->parent != proc || p->isThread == false)
+      {
         continue;
+      }
+
       havekids = 1;
-      if(p->state == ZOMBIE){
+      if(p->state == ZOMBIE)
+      {
         // Found one.
         pid = p->pid;
-
-
 
         kfree(p->kstack);
         p->kstack = 0;
@@ -250,6 +261,9 @@ int join()
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+
+        p->parent->threadCount -= 1;
+
         release(&ptable.lock);
         return pid;
       }
@@ -332,11 +346,16 @@ wait(void)
   for(;;){
     // Scan through table looking for zombie children.
     havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if(p->parent != proc || p->isThread == true)
+      {
         continue;
+      }
+
       havekids = 1;
-      if(p->state == ZOMBIE){
+      if((p->state == ZOMBIE) && (p->threadCount < 1))
+      {
         // Found one.
         pid = p->pid;
         kfree(p->kstack);
