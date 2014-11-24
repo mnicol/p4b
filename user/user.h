@@ -26,6 +26,12 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
+//Added for p4b
+int clone(void*);
+int lock(int*);
+int unlock(int *);
+int join();
+
 // user library functions (ulib.c)
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);
