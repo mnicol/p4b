@@ -11,14 +11,6 @@ typedef int bool;
 #define true  1
 #define false 0
 
-struct 
-{
-  struct spinlock lock;
-  void *chan;
-
-} spinlockWrapper;
-
-
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -36,10 +28,6 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
-
-  spinlockWrapper.chan = (void*) 1;
-
-  initlock(&spinlockWrapper.lock, "threadLock");
 }
 
 // Look in the process table for an UNUSED proc.
@@ -301,22 +289,26 @@ int join()
 
 int lock(int *lock)
 {
-  if(*lock == 1)
+  acquire(&ptable.lock);
+  
+  while(*lock == 1)
     {
-      sleep(spinlockWrapper.chan, &spinlockWrapper.lock);
+      sleep((void*)lock, &ptable.lock);
     }
 
-  spinlockWrapper.lock.locked = *lock;
-  acquire(&(spinlockWrapper.lock));
-  return 1;
+  *lock = 1;
+
+release(&ptable.lock);
+
+return 0;
+
 }
 
 int unlock(int *lock)
 {
-  spinlockWrapper.lock.locked = *lock;
-  release(&(spinlockWrapper.lock));
-  wakeup(spinlockWrapper.chan);
-  return 1;
+  *lock = 0;
+  wakeup((void*)lock);
+  return 0;
 }
 
 

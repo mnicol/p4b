@@ -127,6 +127,8 @@ void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
 void            pushcli(void);
 void            popcli(void);
+void 			acquireSleep(struct spinlock *);
+void 			releaseWakeup(struct spinlock *);
 
 // string.c
 int             memcmp(const void*, const void*, uint);
