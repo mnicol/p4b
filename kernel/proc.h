@@ -77,7 +77,7 @@ struct proc {
   int isThread;                // Set to true(1) if it is a thread or false(0) if it is not 
   volatile int threadCount;    // Parent keeps track of how many threads were made from it
   volatile int threadID;       // Process and it's threads all share the same thread ID so 
-                               //      you can lock on a proc and it's threads
+                               // you can lock on a proc and it's threads
 };
 
 // Process memory is laid out contiguously, low addresses first:

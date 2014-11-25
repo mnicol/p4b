@@ -35,9 +35,22 @@ fdalloc(struct file *f)
 {
   int fd;
 
-  for(fd = 0; fd < NOFILE; fd++){
-    if(proc->ofile[fd] == 0){
+  for(fd = 0; fd < NOFILE; fd++)
+  {
+    if(proc->ofile[fd] == 0)
+    {
       proc->ofile[fd] = f;
+
+      // acquire(&ptable.lock);
+      // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      // {  
+      //   if(p->threadID == proc->threadID)
+      //   {
+          // p->ofile[fd] = f;
+      //   }
+      // }
+      // release(&ptable.lock);
+
       return fd;
     }
   }
